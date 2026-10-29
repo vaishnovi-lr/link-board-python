@@ -1,0 +1,96 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: linkboard-config
+  namespace: stage
+  labels:
+    app.kubernetes.io/name: link-board
+    environment: stage
+data:
+  POSTGRES_DB: linkboard
+  DATABASE_URL: "postgresql://linkboard:linkboard@postgres:5432/linkboard"
+  REDIS_URL: "redis://redis:6379/0"
+---
+# Placeholder secret for database credentials.
+# Real credentials should never be committed to git.
+# In local development / minikube, this provides the defaults required by the app.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: linkboard-db-secret
+  namespace: stage
+  labels:
+    app.kubernetes.io/name: link-board
+    environment: stage
+type: Opaque
+stringData:
+  POSTGRES_USER: linkboard
+  POSTGRES_PASSWORD: linkboard
+---
+# ConfigMap storing the database migration and seed scripts
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-migrations
+  namespace: stage
+  labels:
+    app.kubernetes.io/name: link-board
+    environment: stage
+data:
+  001_schema.sql: |
+    CREATE TABLE IF NOT EXISTS links (
+        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        url TEXT NOT NULL UNIQUE,
+        submitted_by TEXT NOT NULL DEFAULT 'anonymous',
+        ups INT NOT NULL DEFAULT 0 CHECK (ups >= 0),
+        downs INT NOT NULL DEFAULT 0 CHECK (downs >= 0),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now());
+
+    CREATE TABLE IF NOT EXISTS comments (
+        id SERIAL PRIMARY KEY,
+        link_id INT NOT NULL REFERENCES links(id) ON DELETE CASCADE,
+        parent_id INT REFERENCES comments(id) ON DELETE CASCADE,
+        body TEXT NOT NULL,
+        author TEXT NOT NULL DEFAULT 'anonymous',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now());
+
+    CREATE INDEX IF NOT EXISTS links_created ON links (created_at DESC);
+    CREATE INDEX IF NOT EXISTS comments_link ON comments (link_id, parent_id, id);
+
+  002_seed.sql: |
+    INSERT INTO links (id, title, url, submitted_by, ups, downs, created_at) VALUES
+     (1, 'Postgres full-text search is underrated', 'https://example.edu/pg-fts', 'asha', 180, 4, now() - interval '2 days'),
+     (2, 'A 400-line interpreter you can read in one sitting', 'https://example.edu/tiny-lisp', 'vikram', 402, 11, now() - interval '12 hours'),
+     (3, 'Why your Docker build takes four minutes', 'https://example.edu/docker-cache', 'priya', 121, 3, now() - interval '6 hours'),
+     (4, 'I rewrote the campus bus timetable as an API', 'https://example.edu/bus-api', 'rahul', 1, 0, now() - interval '2 minutes'),
+     (5, 'Every CAP theorem explainer is wrong about the P', 'https://example.edu/cap-p', 'fatima', 50, 0, now() - interval '1 day'),
+     (6, 'Ask: how do you revise for a viva?', 'https://example.edu/viva-help', 'dev', 9, 1, now() - interval '3 hours'),
+     (7, 'The entire CS syllabus, ranked (bad opinions inside)', 'https://example.edu/ranked', 'troll', 2, 9, now() - interval '1 hour'),
+     (8, 'Lecture notes: B-trees, with the pictures that actually help', 'https://example.edu/btrees', 'meera', 2100, 30, now() - interval '5 days'),
+     (9, 'Our hostel wifi graphed for 30 days', 'https://example.edu/wifi-graph', 'arjun', 64, 2, now() - interval '9 hours'),
+     (10, 'Show: a Makefile that explains itself', 'https://example.edu/self-doc-make', 'nisha', 33, 1, now() - interval '4 hours')
+    ON CONFLICT (id) DO NOTHING;
+    SELECT setval('links_id_seq', GREATEST((SELECT MAX(id) FROM links), 1));
+
+    INSERT INTO comments (id, link_id, parent_id, body, author, created_at) VALUES
+     (1, 2, NULL, 'The garbage collector chapter is where I stopped understanding anything.', 'asha', now() - interval '11 hours'),
+     (2, 2, 1, 'Skip it on the first read. Mark-and-sweep in 20 lines is at the end of the file.', 'vikram', now() - interval '10 hours'),
+     (3, 2, 2, 'This is the advice I needed three weeks ago.', 'asha', now() - interval '9 hours'),
+     (4, 2, 2, 'Does it handle cycles though? Most toy collectors quietly do not.', 'priya', now() - interval '9 hours'),
+     (5, 2, 4, 'It does. That is the whole point of mark-and-sweep over refcounting.', 'vikram', now() - interval '8 hours'),
+     (6, 2, 5, 'Right, refcounting is the one that leaks on cycles. I had these backwards.', 'priya', now() - interval '8 hours'),
+     (7, 2, 6, 'Everyone has these backwards once. It is a rite of passage.', 'meera', now() - interval '7 hours'),
+     (8, 2, NULL, 'Ran it on the lab machines. 400 lines, zero dependencies, compiles in under a second.', 'dev', now() - interval '10 hours'),
+     (9, 2, 8, 'What did you use to time it?', 'arjun', now() - interval '9 hours'),
+     (10, 2, 9, 'hyperfine. It reruns until the numbers stop moving.', 'dev', now() - interval '8 hours'),
+     (11, 2, NULL, 'Saving this for the compilers elective next semester.', 'nisha', now() - interval '6 hours'),
+     (12, 1, NULL, 'tsvector plus a GIN index got our search from 900ms to 4ms. No extra service.', 'fatima', now() - interval '2 days'),
+     (13, 1, 12, 'Did you need a trigger to keep the tsvector column in step?', 'rahul', now() - interval '1 day'),
+     (14, 1, 13, 'Generated column. Postgres 12 and up does it for you.', 'fatima', now() - interval '1 day'),
+     (15, 3, NULL, 'Putting COPY . . above the dependency install is the whole bug, every time.', 'asha', now() - interval '5 hours'),
+     (16, 3, 15, 'Our CI went from 4 minutes to 20 seconds on exactly that one-line move.', 'priya', now() - interval '4 hours'),
+     (17, 6, NULL, 'Say your answer out loud to an empty room. It is unbearable and it works.', 'meera', now() - interval '2 hours'),
+     (18, 6, 17, 'Can confirm. My flatmate now knows more about B-trees than I do.', 'dev', now() - interval '1 hour')
+    ON CONFLICT (id) DO NOTHING;
+    SELECT setval('comments_id_seq', GREATEST((SELECT MAX(id) FROM comments), 1));

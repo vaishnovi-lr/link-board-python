@@ -1,0 +1,65 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: linkboard
+      POSTGRES_PASSWORD: linkboard
+      POSTGRES_DB: linkboard
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U linkboard -d linkboard"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+      - "[::1]:5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+    ports:
+      - "127.0.0.1:6379:6379"
+      - "[::1]:6379:6379"
+
+  migration:
+    image: postgres:16-alpine
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGUSER: linkboard
+      PGPASSWORD: linkboard
+      PGDATABASE: linkboard
+    volumes:
+      - ./migrations:/migrations:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        for f in /migrations/*.sql; do
+          echo "Applying $$f ..."
+          psql -v ON_ERROR_STOP=1 < "$$f"
+        done
+        echo "All migrations applied."
+
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: "postgresql://linkboard:linkboard@postgres:5432/linkboard"
+      REDIS_URL: "redis://redis:6379/0"
+    depends_on:
+      migration:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+volumes:
+  pgdata:

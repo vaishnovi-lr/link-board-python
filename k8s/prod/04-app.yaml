@@ -1,0 +1,156 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: link-board
+  namespace: prod
+  labels:
+    app.kubernetes.io/name: link-board
+    environment: prod
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: link-board
+  template:
+    metadata:
+      labels:
+        app: link-board
+        environment: prod
+    spec:
+      initContainers:
+        # 1. Wait for PostgreSQL to become reachable and accept connections
+        - name: wait-for-postgres
+          image: postgres:16-alpine
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: PGHOST
+              value: postgres
+            - name: PGPORT
+              value: "5432"
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: linkboard-db-secret
+                  key: POSTGRES_USER
+            - name: PGDATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: linkboard-config
+                  key: POSTGRES_DB
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: linkboard-db-secret
+                  key: POSTGRES_PASSWORD
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for postgres to become ready..."
+              until pg_isready -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE"; do
+                echo "Postgres not ready yet. Retrying in 2 seconds..."
+                sleep 2
+              done
+              echo "Postgres is ready."
+        # 2. Apply database migrations before application starts
+        - name: apply-migrations
+          image: postgres:16-alpine
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: PGHOST
+              value: postgres
+            - name: PGPORT
+              value: "5432"
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: linkboard-db-secret
+                  key: POSTGRES_USER
+            - name: PGDATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: linkboard-config
+                  key: POSTGRES_DB
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: linkboard-db-secret
+                  key: POSTGRES_PASSWORD
+          volumeMounts:
+            - name: migrations-volume
+              mountPath: /migrations
+          command:
+            - sh
+            - -c
+            - |
+              echo "Applying database migrations..."
+              for f in /migrations/*.sql; do
+                if [ -f "$f" ]; then
+                  echo "Applying $f ..."
+                  psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -v ON_ERROR_STOP=1 -f "$f"
+                fi
+              done
+              echo "All database migrations applied successfully."
+      containers:
+        - name: link-board
+          image: bhuvangouda/link-board:prod
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: linkboard-config
+                  key: DATABASE_URL
+            - name: REDIS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: linkboard-config
+                  key: REDIS_URL
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+      volumes:
+        - name: migrations-volume
+          configMap:
+            name: postgres-migrations
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: link-board
+  namespace: prod
+  labels:
+    app.kubernetes.io/name: link-board
+    environment: prod
+spec:
+  type: NodePort
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 30082
+      name: http
+  selector:
+    app: link-board

@@ -1,0 +1,8 @@
+# Namespace for QA environment
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: qa
+  labels:
+    environment: qa
+    app.kubernetes.io/part-of: link-board
