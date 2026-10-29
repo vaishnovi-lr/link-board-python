@@ -1,0 +1,8 @@
+# Namespace for Staging environment
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: stage
+  labels:
+    environment: stage
+    app.kubernetes.io/part-of: link-board

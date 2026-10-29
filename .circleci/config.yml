@@ -1,0 +1,182 @@
+version: 2.1
+
+jobs:
+  secret-scan:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+
+      - run:
+          name: Install Gitleaks
+          command: |
+            set -e
+            GITLEAKS_VERSION="8.24.0"
+            curl -fsSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" -o /tmp/gitleaks.tar.gz
+            tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
+            sudo mv /tmp/gitleaks /usr/local/bin/gitleaks
+            gitleaks version
+
+      - run:
+          name: Scan repository for secrets
+          command: |
+            gitleaks detect --source . --no-git --verbose
+
+  lint:
+    docker:
+      - image: cimg/python:3.12
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - python-deps-v1-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}
+            - python-deps-v1-
+
+      - run:
+          name: Install dependencies
+          command: |
+            python -m pip install --upgrade pip
+            pip install -r requirements.txt
+            pip install -r requirements-dev.txt
+
+      - save_cache:
+          key: python-deps-v1-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}
+          paths:
+            - ~/.cache/pip
+
+      - run:
+          name: Run Ruff
+          command: |
+            ruff check app/ tests/
+
+  unit-tests:
+    docker:
+      - image: cimg/python:3.12
+    steps:
+      - checkout
+
+      - run:
+          name: Install dependencies
+          command: |
+            python -m pip install --upgrade pip
+            pip install -r requirements.txt
+            pip install -r requirements-dev.txt
+
+      - run:
+          name: Run unit tests
+          command: |
+            python -m pytest tests/unit/ -v
+
+  integration-tests:
+    docker:
+      - image: cimg/python:3.12
+      - image: cimg/postgres:16.4
+        environment:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: linkboard_test
+      - image: cimg/redis:7.2
+
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/linkboard_test
+      REDIS_URL: redis://localhost:6379/0
+
+    steps:
+      - checkout
+
+      - run:
+          name: Install dependencies
+          command: |
+            python -m pip install --upgrade pip
+            pip install -r requirements.txt
+            pip install -r requirements-dev.txt
+
+      - run:
+          name: Wait for PostgreSQL and Redis
+          command: |
+            set -e
+
+            for i in $(seq 1 30); do
+              if python -c "import socket; s=socket.create_connection(('localhost', 5432), 2); s.close()" 2>/dev/null; then
+                break
+              fi
+              sleep 2
+            done
+
+            python -c "import socket; s=socket.create_connection(('localhost', 5432), 2); s.close()"
+
+            for i in $(seq 1 30); do
+              if python -c "import socket; s=socket.create_connection(('localhost', 6379), 2); s.close()" 2>/dev/null; then
+                break
+              fi
+              sleep 2
+            done
+
+            python -c "import socket; s=socket.create_connection(('localhost', 6379), 2); s.close()"
+
+      - run:
+          name: Apply database migrations
+          command: |
+            python -c "
+            import glob, os, psycopg
+            db_url = os.environ['DATABASE_URL']
+            with psycopg.connect(db_url, autocommit=True) as conn:
+                for sql_file in sorted(glob.glob('migrations/*.sql')):
+                    print(f'Applying {sql_file}...')
+                    with open(sql_file, 'r', encoding='utf-8') as f:
+                        conn.execute(f.read())
+            print('All migrations applied successfully.')
+            "
+
+      - run:
+          name: Run integration tests
+          command: |
+            python -m pytest tests/integration/ -v
+
+  docker-build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - setup_remote_docker
+
+      - run:
+          name: Build Docker image
+          command: |
+            docker build -t bhuvangouda/link-board:qa .
+
+      - run:
+          name: Publish Docker image when credentials are configured
+          command: |
+            if [ -n "${DOCKERHUB_USER:-}" ] && [ -n "${DOCKERHUB_TOKEN:-}" ]; then
+              echo "$DOCKERHUB_TOKEN" | docker login \
+                --username "$DOCKERHUB_USER" \
+                --password-stdin
+              docker push bhuvangouda/link-board:qa
+              docker logout
+            else
+              echo "Docker Hub credentials are not configured."
+              echo "Image build succeeded, but publishing was skipped."
+            fi
+
+workflows:
+  main-pipeline:
+    jobs:
+      - secret-scan
+
+      - lint:
+          requires:
+            - secret-scan
+
+      - unit-tests:
+          requires:
+            - lint
+
+      - integration-tests:
+          requires:
+            - unit-tests
+
+      - docker-build:
+          requires:
+            - integration-tests
