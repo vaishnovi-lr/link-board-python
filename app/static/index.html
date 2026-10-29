@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Link Board — Hot Ranking Platform</title>
+  <meta name="description" content="A dark, editorial developer link-sharing platform with Reddit & Hacker News hot-ranking algorithms.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+  <!-- APP SHELL: 3-COLUMN DESKTOP LAYOUT -->
+  <div class="app-layout">
+
+    <!-- LEFT NAVIGATION RAIL -->
+    <aside class="nav-rail" aria-label="Main Navigation">
+      <div class="rail-header">
+        <a href="#" class="brand" id="navHome" title="Link Board Home">
+          <div class="brand-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+            </svg>
+          </div>
+          <div class="brand-text">
+            <span class="brand-title">LINK BOARD</span>
+            <span class="brand-subtitle">HOT RANKING</span>
+          </div>
+        </a>
+      </div>
+
+      <nav class="rail-menu">
+        <button class="rail-item active" id="navBtnHome" title="Front Page Feed">
+          <svg class="rail-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          <span class="rail-label">Feed</span>
+        </button>
+
+        <button class="rail-item" id="navBtnSubmit" title="Submit Link">
+          <svg class="rail-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="16"></line>
+            <line x1="8" y1="12" x2="16" y2="12"></line>
+          </svg>
+          <span class="rail-label">Submit Link</span>
+        </button>
+
+        <button class="rail-item" id="navBtnExplain" title="Algorithm Comparison">
+          <svg class="rail-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="14"></line>
+          </svg>
+          <span class="rail-label">Explain Ranking</span>
+        </button>
+
+        <button class="rail-item" id="navBtnStatus" title="System Status">
+          <svg class="rail-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+          </svg>
+          <span class="rail-label">System Status</span>
+        </button>
+      </nav>
+
+      <div class="rail-footer">
+        <button class="action-btn-primary" id="btnOpenSubmitModal">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>Post Link</span>
+        </button>
+        <div class="rail-meta">
+          <span class="pulse-dot-mini" id="miniStatusDot"></span>
+          <span id="miniStatusText">Systems live</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MOBILE TOP BAR -->
+    <header class="mobile-header">
+      <a href="#" class="brand-mobile" id="mobileBrandHome">
+        <div class="brand-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+          </svg>
+        </div>
+        <span class="brand-title">LINK BOARD</span>
+      </a>
+      <button class="btn-icon" id="btnMobileSubmit" title="Submit Link">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+      </button>
+    </header>
+
+    <!-- CENTER CONTENT FEED -->
+    <main class="main-column" id="mainContent">
+
+      <!-- VIEW 1: HOME / FEED -->
+      <section id="viewHome" class="view">
+        <div class="feed-header">
+          <div class="header-titles">
+            <h1 class="page-title">Ranked Feed</h1>
+            <p class="page-subtitle">Algorithmic community board weighted for freshness and momentum.</p>
+          </div>
+
+          <!-- COMPACT FORMULA SWITCHER -->
+          <div class="formula-switcher" role="tablist" aria-label="Ranking Formula Switcher">
+            <button class="switcher-tab active" id="btnFormulaReddit" data-formula="reddit" role="tab" aria-selected="true">
+              <span class="tab-name">Reddit Hot</span>
+              <span class="tab-tag">Redis ZSet</span>
+            </button>
+            <button class="switcher-tab" id="btnFormulaHN" data-formula="hn" role="tab" aria-selected="false">
+              <span class="tab-name">Hacker News</span>
+              <span class="tab-tag">Dynamic</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- FORMULA NOTICE BANNER -->
+        <div class="formula-status-strip">
+          <div class="strip-dot"></div>
+          <span class="strip-text" id="formulaInfoText">Order is timestamp-stable. Instant lookup from Redis sorted set.</span>
+        </div>
+
+        <div id="hnNoticeBanner" class="notice-callout hidden">
+          <div class="callout-lead">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            <span>Time-Decay Computation</span>
+          </div>
+          <p class="callout-body">
+            Hacker News ranks decay with every passing second using <code>(points − 1) / (age + 2)^1.8</code>.
+            Because posts overtake each other without new votes, the order shifts continuously and is computed per request.
+          </p>
+        </div>
+
+        <!-- LINKS FEED LIST -->
+        <div id="linksList" class="feed-list" aria-live="polite">
+          <!-- Dynamic links injected here -->
+        </div>
+
+        <!-- PAGINATION CONTROLS -->
+        <nav class="feed-pagination" id="paginationControls" aria-label="Pagination">
+          <button class="page-nav-btn" id="btnPrevPage" disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+            <span>Previous</span>
+          </button>
+          <span class="page-count" id="pageIndicator">Page 1</span>
+          <button class="page-nav-btn" id="btnNextPage">
+            <span>Next</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
+        </nav>
+      </section>
+
+      <!-- VIEW 2: LINK DETAILS & DISCUSSION -->
+      <section id="viewDetails" class="view hidden">
+        <div class="view-back-bar">
+          <button class="btn-back" id="btnBackToHome">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            <span>Back to feed</span>
+          </button>
+        </div>
+
+        <!-- LINK HERO -->
+        <div id="linkDetailCard" class="detail-hero">
+          <!-- Dynamic link details -->
+        </div>
+
+        <!-- DISCUSSION SECTION -->
+        <div class="discussion-container">
+          <div class="discussion-heading">
+            <h2 class="discussion-title" id="commentsCountTitle">Discussion</h2>
+            <span class="discussion-note">Nested replies retain hierarchical parent structure.</span>
+          </div>
+
+          <!-- ROOT COMMENT INPUT -->
+          <form id="formAddRootComment" class="comment-compose-panel">
+            <div class="compose-header">
+              <label for="rootCommentBody" class="compose-label">Leave a reply</label>
+              <input type="text" id="rootCommentAuthor" class="author-input" placeholder="Your handle (default: anonymous)" autocomplete="off">
+            </div>
+            <textarea id="rootCommentBody" class="compose-textarea" rows="3" placeholder="Contribute to this discussion..." required></textarea>
+            <div class="compose-footer">
+              <button type="submit" class="btn-publish" id="btnSubmitRootComment">Post Comment</button>
+            </div>
+          </form>
+
+          <!-- COMMENTS TREE -->
+          <div id="commentsTreeContainer" class="comments-stream">
+            <!-- Dynamic nested comments -->
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 3: EXPLAIN RANKING -->
+      <section id="viewExplain" class="view hidden">
+        <div class="feed-header">
+          <div class="header-titles">
+            <h1 class="page-title">Algorithm Comparison</h1>
+            <p class="page-subtitle">Inspect how the Reddit logarithmic score and Hacker News gravity power-law rank the same content.</p>
+          </div>
+        </div>
+
+        <!-- COMPARISON CONTROL FORM -->
+        <form id="formExplain" class="explain-controls-card">
+          <div class="form-row">
+            <div class="form-col">
+              <label for="explainLinkA" class="input-label">Target Link A (ID)</label>
+              <input type="number" id="explainLinkA" class="form-input" value="4" required min="1">
+            </div>
+            <div class="form-col">
+              <label for="explainLinkB" class="input-label">Target Link B (ID)</label>
+              <input type="number" id="explainLinkB" class="form-input" value="5" required min="1">
+            </div>
+            <div class="form-col form-col-action">
+              <button type="submit" class="action-btn-primary" id="btnRunExplain">
+                <span>Compare Algorithms</span>
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <!-- EXPLAIN RESULTS CONTAINER -->
+        <div id="explainResults" class="explain-output-area">
+          <!-- Dynamic comparison output -->
+        </div>
+      </section>
+
+      <!-- VIEW 4: SYSTEM STATUS -->
+      <section id="viewStatus" class="view hidden">
+        <div class="feed-header">
+          <div class="header-titles">
+            <h1 class="page-title">Infrastructure Pulse</h1>
+            <p class="page-subtitle">Real-time connectivity and health telemetry for PostgreSQL, Redis, and FastAPI.</p>
+          </div>
+        </div>
+
+        <div class="status-overview-panel">
+          <div class="overall-banner">
+            <div class="banner-state">
+              <span class="status-pulse-large" id="overallStatusDot"></span>
+              <div class="banner-titles">
+                <span class="banner-headline" id="overallStatusBadge">Checking telemetry...</span>
+                <span class="banner-subtext">Automated connectivity probe</span>
+              </div>
+            </div>
+            <button class="btn-refresh" id="btnRefreshHealth" title="Run health check">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+              </svg>
+              <span>Refresh Status</span>
+            </button>
+          </div>
+
+          <div class="services-list">
+            <div class="service-row" id="statusItemAPI">
+              <div class="service-identity">
+                <span class="service-name">FastAPI Application Server</span>
+                <span class="service-desc">Uvicorn HTTP server & endpoints</span>
+              </div>
+              <div class="service-state" id="valStatusAPI">Checking...</div>
+            </div>
+
+            <div class="service-row" id="statusItemPostgres">
+              <div class="service-identity">
+                <span class="service-name">PostgreSQL 16 Engine</span>
+                <span class="service-desc">Persistent links, recursive comments CTE</span>
+              </div>
+              <div class="service-state" id="valStatusPostgres">Checking...</div>
+            </div>
+
+            <div class="service-row" id="statusItemRedis">
+              <div class="service-identity">
+                <span class="service-name">Redis 7 Cluster Cache</span>
+                <span class="service-desc">Front page leaderboard sorted set (ZSET)</span>
+              </div>
+              <div class="service-state" id="valStatusRedis">Checking...</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- RIGHT SIDEBAR (DESKTOP) -->
+    <aside class="sidebar-column" aria-label="System Context and Rules">
+      <!-- WIDGET 1: ALGORITHM ESSENCE -->
+      <div class="sidebar-card">
+        <h3 class="sidebar-heading">The Ranking Trade-off</h3>
+        <p class="sidebar-copy">
+          A brand-new post with <strong>1 vote</strong> vs. a day-old post with <strong>50 votes</strong>?
+        </p>
+        <div class="math-comparison-table">
+          <div class="math-row">
+            <span class="math-label">Reddit:</span>
+            <span class="math-val">New post wins</span>
+          </div>
+          <div class="math-subtext">Freshness offset beats initial vote deficits. Order is stable over time.</div>
+          <div class="math-row mt-2">
+            <span class="math-label">Hacker News:</span>
+            <span class="math-val">Day-old post wins</span>
+          </div>
+          <div class="math-subtext">Needs 2+ votes to score above zero. Score decays with passing time.</div>
+        </div>
+      </div>
+
+      <!-- WIDGET 2: STAYING POWER RULES -->
+      <div class="sidebar-card">
+        <h3 class="sidebar-heading">Decay Parameter</h3>
+        <div class="decay-metric">
+          <span class="decay-num">45,000s</span>
+          <span class="decay-unit">12.5 hours</span>
+        </div>
+        <p class="sidebar-copy">
+          Each order of magnitude (<span class="mono-code">10x</span>) in votes buys exactly 12.5 hours of staying power. Doubling votes buys ~3.8 hours.
+        </p>
+      </div>
+
+      <!-- FOOTER -->
+      <footer class="sidebar-footer">
+        <p>Link Board &bull; Python 3.12, FastAPI, PostgreSQL & Redis</p>
+      </footer>
+    </aside>
+
+  </div>
+
+  <!-- MOBILE BOTTOM NAVIGATION -->
+  <nav class="mobile-nav-bar" aria-label="Mobile Navigation">
+    <button class="mobile-nav-item active" id="mobNavHome" title="Feed">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="7"></rect>
+        <rect x="14" y="3" width="7" height="7"></rect>
+        <rect x="14" y="14" width="7" height="7"></rect>
+        <rect x="3" y="14" width="7" height="7"></rect>
+      </svg>
+      <span>Feed</span>
+    </button>
+    <button class="mobile-nav-item" id="mobNavSubmit" title="Submit">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="16"></line>
+        <line x1="8" y1="12" x2="16" y2="12"></line>
+      </svg>
+      <span>Submit</span>
+    </button>
+    <button class="mobile-nav-item" id="mobNavExplain" title="Explain">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="20" x2="18" y2="10"></line>
+        <line x1="12" y1="20" x2="12" y2="4"></line>
+        <line x1="6" y1="20" x2="6" y2="14"></line>
+      </svg>
+      <span>Explain</span>
+    </button>
+    <button class="mobile-nav-item" id="mobNavStatus" title="Status">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+      </svg>
+      <span>Status</span>
+    </button>
+  </nav>
+
+  <!-- MODAL: SUBMIT LINK -->
+  <div class="modal-backdrop hidden" id="submitModal" role="dialog" aria-modal="true" aria-labelledby="modalSubmitTitle">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <h2 class="modal-title" id="modalSubmitTitle">Submit Link</h2>
+          <p class="modal-subtext">Share an article or project with the link board community.</p>
+        </div>
+        <button class="btn-close" id="btnCloseSubmitModal" aria-label="Close dialog">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <form id="formSubmitLink" class="modal-form">
+        <div class="form-field">
+          <label for="submitTitle" class="field-label">Title <span class="required-star">*</span></label>
+          <input type="text" id="submitTitle" class="form-input" placeholder="e.g. Why Python 3.12 GIL changes matter" required autocomplete="off">
+        </div>
+
+        <div class="form-field">
+          <label for="submitUrl" class="field-label">URL <span class="required-star">*</span></label>
+          <input type="url" id="submitUrl" class="form-input" placeholder="https://example.edu/article" required autocomplete="off">
+        </div>
+
+        <div class="form-field">
+          <label for="submitAuthor" class="field-label">Submitted by</label>
+          <input type="text" id="submitAuthor" class="form-input" placeholder="anonymous (optional)" autocomplete="off">
+        </div>
+
+        <div id="submitErrorAlert" class="modal-error-alert hidden" role="alert"></div>
+
+        <div class="modal-foot">
+          <button type="button" class="btn-ghost" id="btnCancelSubmitModal">Cancel</button>
+          <button type="submit" class="action-btn-primary" id="btnSubmitLink">Publish Link</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: REPLY TO COMMENT -->
+  <div class="modal-backdrop hidden" id="replyModal" role="dialog" aria-modal="true" aria-labelledby="modalReplyTitle">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <h2 class="modal-title" id="modalReplyTitle">Reply to Comment</h2>
+          <p class="modal-subtext">Your response will appear threaded under the selected message.</p>
+        </div>
+        <button class="btn-close" id="btnCloseReplyModal" aria-label="Close dialog">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="quoted-comment" id="parentCommentPreview"></div>
+
+      <form id="formSubmitReply" class="modal-form">
+        <input type="hidden" id="replyParentId">
+
+        <div class="form-field">
+          <label for="replyAuthor" class="field-label">Your handle</label>
+          <input type="text" id="replyAuthor" class="form-input" placeholder="anonymous (optional)" autocomplete="off">
+        </div>
+
+        <div class="form-field">
+          <label for="replyBody" class="field-label">Reply message <span class="required-star">*</span></label>
+          <textarea id="replyBody" class="form-textarea" rows="3" placeholder="Write your response..." required></textarea>
+        </div>
+
+        <div id="replyErrorAlert" class="modal-error-alert hidden" role="alert"></div>
+
+        <div class="modal-foot">
+          <button type="button" class="btn-ghost" id="btnCancelReplyModal">Cancel</button>
+          <button type="submit" class="action-btn-primary" id="btnSubmitReply">Post Reply</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

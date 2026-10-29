@@ -1,8 +1,10 @@
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
+import os
 from fastapi import Body, FastAPI, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from . import cache, db
 from .ranking import (
@@ -19,6 +21,19 @@ from .ranking import (
 )
 
 app = FastAPI(title="link-board")
+
+STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
+if os.path.exists(STATIC_DIR):
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+
+@app.get("/", include_in_schema=False)
+def serve_frontend():
+    index_path = os.path.join(STATIC_DIR, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    raise HTTPException(404, "Frontend index.html not found")
+
 
 FRONT_KEY = "front"
 FRESH_KEY = "front:fresh"
